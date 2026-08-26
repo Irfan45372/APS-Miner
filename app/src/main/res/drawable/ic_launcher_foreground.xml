@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- GPU / Mining Chip Hexagon Outer -->
+    <path
+        android:fillColor="#14F195"
+        android:pathData="M54,30 L74,42 L74,66 L54,78 L34,66 L34,42 Z" />
+    <!-- Inner Core Dark -->
+    <path
+        android:fillColor="#090E18"
+        android:pathData="M54,34 L70,44 L70,64 L54,74 L38,64 L38,44 Z" />
+    <!-- Solana 3 Speed Bars inside Chip -->
+    <path
+        android:fillColor="#9945FF"
+        android:pathData="M43,45 L62,45 L65,49 L46,49 Z" />
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M46,52 L65,52 L62,56 L43,56 Z" />
+    <path
+        android:fillColor="#14F195"
+        android:pathData="M43,59 L62,59 L65,63 L46,63 Z" />
+</vector>

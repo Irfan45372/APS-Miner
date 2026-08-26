@@ -1,0 +1,7 @@
+{
+  "name": "APS Miner",
+  "description": "Cyberpunk Solana SPL idle mining dApp with Helius RPC & Phantom Wallet integration",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
