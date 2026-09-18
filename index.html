@@ -326,9 +326,15 @@
 
             <!-- Modal Header -->
             <div class="pb-4 border-b border-cyberBorder">
-                <span class="text-xs font-mono text-cyberGold font-bold tracking-wider">CLOUD COMPUTING CLUSTERS</span>
-                <h3 class="text-2xl font-bold text-white tracking-wide">SEWA RIG HASHRATE</h3>
-                <p class="text-xs text-gray-400 font-mono mt-1">Sewa unit komputasi rig awan untuk melipatgandakan kecepatan penambangan token APS secara terjamin.</p>
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <span class="text-xs font-mono text-cyberGold font-bold tracking-wider">CLOUD COMPUTING CLUSTERS</span>
+                    <div class="text-xs font-mono bg-black/60 border border-cyberCyan/40 px-3 py-1 rounded-lg">
+                        <span class="text-gray-400">Saldo Dompet Anda: </span>
+                        <span id="modalApsBalance" class="text-cyberGreen font-bold">0.00 APS</span>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-white tracking-wide mt-1">SEWA RIG HASHRATE</h3>
+                <p class="text-xs text-gray-400 font-mono mt-1">Transaksi sewa akan langsung memotong token APS dari dompet Phantom Anda melalui transaksi resmi di jaringan Solana.</p>
             </div>
 
             <!-- List of Rental Plans -->
@@ -473,6 +479,7 @@
         let miningInterval = null;
         let countdownInterval = null;
         let connectedPublicKey = null;
+        let userApsBalance = 0.0;
 
         // Active Rental State
         let currentRental = null;
@@ -480,6 +487,53 @@
         const APS_MINT = "5Jbt6zLztKuRF9hc7C8y2VemxMguP86ibDoJzetkpump";
         const TREASURY = "HNKC9TVBJSKG1Mzu6PE9Yag83y9iZv6yhr6z1UdK92hq";
         const APS_USD_PRICE = 0.0015;
+
+        // Solana SPL Token Program Constants
+        const TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+        const ASSOCIATED_TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5PWHgk5LXYDuMDbp7u");
+        const SYSTEM_PROGRAM_ID = solanaWeb3.SystemProgram.programId;
+
+        function getAssociatedTokenAddress(mint, owner) {
+            const [address] = solanaWeb3.PublicKey.findProgramAddressSync(
+                [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            );
+            return address;
+        }
+
+        function createAtaInstruction(payer, ata, owner, mint) {
+            return new solanaWeb3.TransactionInstruction({
+                keys: [
+                    { pubkey: payer, isSigner: true, isWritable: true },
+                    { pubkey: ata, isSigner: false, isWritable: true },
+                    { pubkey: owner, isSigner: false, isWritable: false },
+                    { pubkey: mint, isSigner: false, isWritable: false },
+                    { pubkey: SYSTEM_PROGRAM_ID, isSigner: false, isWritable: false },
+                    { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+                ],
+                programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+                data: new Uint8Array(0)
+            });
+        }
+
+        function createTransferCheckedInstruction(source, mint, destination, owner, rawAmountBigInt, decimals) {
+            const data = new Uint8Array(1 + 8 + 1);
+            data[0] = 12; // TransferChecked
+            const view = new DataView(data.buffer);
+            view.setBigUint64(1, rawAmountBigInt, true);
+            data[9] = decimals;
+
+            return new solanaWeb3.TransactionInstruction({
+                keys: [
+                    { pubkey: source, isSigner: false, isWritable: true },
+                    { pubkey: mint, isSigner: false, isWritable: false },
+                    { pubkey: destination, isSigner: false, isWritable: true },
+                    { pubkey: owner, isSigner: true, isWritable: false },
+                ],
+                programId: TOKEN_PROGRAM_ID,
+                data: data
+            });
+        }
 
         function logConsole(msg, isHighlight = false) {
             const consoleBox = document.getElementById('consoleLogs');
@@ -493,6 +547,7 @@
 
         function openRentModal() {
             playBeep(520, 'sine', 0.15);
+            document.getElementById('modalApsBalance').textContent = `${userApsBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} APS`;
             document.getElementById('rentRigModal').classList.remove('hidden');
         }
 
@@ -500,37 +555,100 @@
             document.getElementById('rentRigModal').classList.add('hidden');
         }
 
-        // Handle Rent Plan Action
+        // Handle Real On-Chain Rent Plan Action
         async function rentPlan(planId, planName, days, costAps, bonusMhs, bonusYield, badge) {
             playBeep(650, 'triangle', 0.2);
 
-            const confirmMsg = `Konfirmasi Sewa Rig:\n\nPaket: ${planName}\nDurasi: ${days} Hari\nBiaya: ${costAps.toLocaleString()} APS\nBonus Hashrate: +${bonusMhs} MH/s\n\nLanjutkan penyewaan?`;
+            if (!connectedPublicKey) {
+                alert("Silakan hubungkan Phantom Wallet Anda terlebih dahulu untuk melakukan transaksi sewa.");
+                toggleWalletConnection();
+                return;
+            }
+
+            // Check if user has sufficient APS tokens
+            if (userApsBalance < costAps) {
+                alert(`⚠️ Saldo Token APS Tidak Mencukupi!\n\nSaldo Anda: ${userApsBalance.toLocaleString()} APS\nBiaya Sewa: ${costAps.toLocaleString()} APS\n\nSilakan beli atau isi token APS di dompet Phantom Anda terlebih dahulu.`);
+                return;
+            }
+
+            const confirmMsg = `Konfirmasi Sewa Rig On-Chain:\n\nPaket: ${planName}\nDurasi: ${days} Hari\nBiaya: ${costAps.toLocaleString()} APS (Akan dipotong langsung dari dompet Phantom Anda)\nBonus Hashrate: +${bonusMhs} MH/s\n\nLanjutkan konfirmasi transaksi di Phantom Wallet?`;
             if (!confirm(confirmMsg)) return;
 
             closeRentModal();
 
-            // Setup Active Rental
-            const now = Date.now();
-            const durationMs = days * 24 * 60 * 60 * 1000;
-            currentRental = {
-                planId,
-                planName,
-                startTime: now,
-                endTime: now + durationMs,
-                bonusMhs,
-                bonusYield,
-                badge
-            };
+            try {
+                logConsole(`Menyiapkan transaksi pemotongan ${costAps.toLocaleString()} APS ke Treasury...`, true);
+                const rpcEndpoint = "https://mainnet.helius-rpc.com/?api-key=0f5056b5-a8f0-4c80-b768-e2baaff5073f";
+                const connection = new solanaWeb3.Connection(rpcEndpoint, "confirmed");
 
-            bonusHashrateMhs = bonusMhs;
-            bonusYieldPerSec = bonusYield;
+                const userPubkey = new solanaWeb3.PublicKey(connectedPublicKey);
+                const mintPubkey = new solanaWeb3.PublicKey(APS_MINT);
+                const treasuryPubkey = new solanaWeb3.PublicKey(TREASURY);
 
-            updateRigDisplay();
-            startRentalCountdown();
+                const userAta = getAssociatedTokenAddress(mintPubkey, userPubkey);
+                const treasuryAta = getAssociatedTokenAddress(mintPubkey, treasuryPubkey);
 
-            playBeep(920, 'square', 0.3);
-            logConsole(`Rig disewa: ${planName} (+${bonusMhs} MH/s)!`, true);
-            alert(`Selamat! Anda berhasil menyewa ${planName}.\nHashrate Anda meningkat sebesar +${bonusMhs} MH/s selama ${days} hari!`);
+                const transaction = new solanaWeb3.Transaction();
+
+                // Check if Treasury ATA exists, if not initialize it
+                const treasuryAtaInfo = await connection.getAccountInfo(treasuryAta);
+                if (!treasuryAtaInfo) {
+                    logConsole("Inisialisasi akun token Treasury on-chain...", true);
+                    transaction.add(createAtaInstruction(userPubkey, treasuryAta, treasuryPubkey, mintPubkey));
+                }
+
+                // SPL Token 6 decimals: 1 APS = 1,000,000 units
+                const rawAmount = BigInt(Math.round(costAps * 1000000));
+                transaction.add(createTransferCheckedInstruction(userAta, mintPubkey, treasuryAta, userPubkey, rawAmount, 6));
+
+                const { blockhash } = await connection.getLatestBlockhash('confirmed');
+                transaction.recentBlockhash = blockhash;
+                transaction.feePayer = userPubkey;
+
+                logConsole("Silakan setujui tanda tangan transaksi di Phantom Wallet...", true);
+                playBeep(750, 'sine', 0.2);
+
+                const { signature } = await window.solana.signAndSendTransaction(transaction);
+                logConsole(`Transaksi terkirim ke jaringan Solana! Tx: ${signature.substring(0, 12)}...`, true);
+
+                // Wait for on-chain confirmation
+                logConsole("Menunggu konfirmasi finalisasi blok Solana...", true);
+                await connection.confirmTransaction(signature, 'confirmed');
+
+                logConsole(`✅ Transaksi BERHASIL! ${costAps.toLocaleString()} APS telah dipotong dari dompet.`, true);
+                playBeep(920, 'square', 0.4);
+
+                // Refresh balances from on-chain
+                await fetchLiveBalances(userPubkey);
+
+                // Setup Active Rental
+                const now = Date.now();
+                const durationMs = days * 24 * 60 * 60 * 1000;
+                currentRental = {
+                    planId,
+                    planName,
+                    startTime: now,
+                    endTime: now + durationMs,
+                    bonusMhs,
+                    bonusYield,
+                    badge,
+                    txHash: signature
+                };
+
+                bonusHashrateMhs = bonusMhs;
+                bonusYieldPerSec = bonusYield;
+
+                updateRigDisplay();
+                startRentalCountdown();
+
+                alert(`🎉 Transaksi Berhasil!\n\nToken ${costAps.toLocaleString()} APS telah berhasil dipotong dari dompet Phantom Anda.\nTx Hash: ${signature}\n\nRig ${planName} (+${bonusMhs} MH/s) telah aktif selama ${days} hari!`);
+
+            } catch (err) {
+                console.error("Rent transaction error:", err);
+                logConsole(`Transaksi dibatalkan atau gagal: ${err.message || err}`, false);
+                playBeep(220, 'sawtooth', 0.4);
+                alert(`Penyewaan Dibatalkan / Gagal:\n${err.message || 'Pengguna menolak transaksi di Phantom Wallet.'}`);
+            }
         }
 
         function updateRigDisplay() {
@@ -618,7 +736,7 @@
                 updateWalletUi();
                 logConsole(`Connected: ${connectedPublicKey.substring(0, 6)}...${connectedPublicKey.substring(connectedPublicKey.length - 4)}`, true);
                 playBeep(900, 'sine', 0.25);
-                fetchLiveSolBalance(resp.publicKey);
+                fetchLiveBalances(resp.publicKey);
             } catch (err) {
                 console.error("Wallet connect error:", err);
                 logConsole("Connection rejected by user.");
@@ -642,18 +760,41 @@
                 dot.className = "w-2 h-2 rounded-full bg-cyberRed";
                 addrDisplay.textContent = "NOT CONNECTED";
                 addrDisplay.className = "text-cyberCyan font-bold";
+                userApsBalance = 0.0;
+                document.getElementById('apsBalanceText').textContent = "0.00 APS";
+                document.getElementById('solBalanceText').textContent = "0.0000 SOL";
             }
         }
 
-        async function fetchLiveSolBalance(pubKey) {
+        async function fetchLiveBalances(pubKey) {
             try {
-                const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
+                const rpcEndpoint = "https://mainnet.helius-rpc.com/?api-key=0f5056b5-a8f0-4c80-b768-e2baaff5073f";
+                const connection = new solanaWeb3.Connection(rpcEndpoint, "confirmed");
+
+                // 1. Fetch SOL balance
                 const balance = await connection.getBalance(pubKey);
                 const sol = (balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4);
                 document.getElementById('solBalanceText').textContent = `${sol} SOL`;
-                logConsole(`Fetched On-Chain Balance: ${sol} SOL`);
+
+                // 2. Fetch APS Token balance
+                const mintPubkey = new solanaWeb3.PublicKey(APS_MINT);
+                const tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubKey, { mint: mintPubkey });
+
+                let tokenBalance = 0.0;
+                if (tokenAccounts.value && tokenAccounts.value.length > 0) {
+                    tokenBalance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount || 0.0;
+                }
+                userApsBalance = tokenBalance;
+                const formattedAps = tokenBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                document.getElementById('apsBalanceText').textContent = `${formattedAps} APS`;
+                const modalBalanceEl = document.getElementById('modalApsBalance');
+                if (modalBalanceEl) {
+                    modalBalanceEl.textContent = `${formattedAps} APS`;
+                }
+                logConsole(`Fetched On-Chain: ${sol} SOL • ${formattedAps} APS`);
             } catch(e) {
-                document.getElementById('solBalanceText').textContent = "0.0250 SOL (Cached)";
+                console.error("fetchLiveBalances error:", e);
+                logConsole(`Info: Memeriksa saldo on-chain...`);
             }
         }
 
