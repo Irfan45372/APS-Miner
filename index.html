@@ -50,6 +50,9 @@
         .neon-glow-green {
             box-shadow: 0 0 20px rgba(0, 255, 163, 0.35);
         }
+        .neon-glow-gold {
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.35);
+        }
         .scanline {
             position: relative;
             overflow: hidden;
@@ -99,6 +102,11 @@
             </div>
 
             <div class="flex items-center space-x-3">
+                <!-- Open Rent Rig Modal Button in Header -->
+                <button onclick="openRentModal()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-cyberGold/70 bg-cyberGold/10 text-cyberGold hover:bg-cyberGold hover:text-black text-xs font-mono font-bold transition">
+                    <span>⚡ RENT RIG</span>
+                </button>
+
                 <!-- Download APK Button -->
                 <a href="APS_Miner.apk" download class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-lg border border-cyberBorder hover:border-cyberGreen/60 bg-black/40 text-xs font-mono transition text-gray-300 hover:text-cyberGreen">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -159,12 +167,12 @@
                     <!-- Hardware Spec Stats Bar -->
                     <div class="grid grid-cols-3 gap-3 mt-4 text-center">
                         <div class="bg-black/30 border border-cyberBorder/60 rounded-lg p-2.5">
-                            <span class="text-[11px] text-gray-400 font-mono block">BASE HASHRATE</span>
-                            <span class="text-base font-bold font-mono text-cyberGreen">50.0 MH/s</span>
+                            <span class="text-[11px] text-gray-400 font-mono block">TOTAL HASHRATE</span>
+                            <span id="hashrateDisplay" class="text-base font-bold font-mono text-cyberGreen">50.0 MH/s</span>
                         </div>
                         <div class="bg-black/30 border border-cyberBorder/60 rounded-lg p-2.5">
                             <span class="text-[11px] text-gray-400 font-mono block">POWER DRAW</span>
-                            <span class="text-base font-bold font-mono text-gray-200">45 Watts</span>
+                            <span id="powerDisplay" class="text-base font-bold font-mono text-gray-200">45 Watts</span>
                         </div>
                         <div class="bg-black/30 border border-cyberBorder/60 rounded-lg p-2.5">
                             <span class="text-[11px] text-gray-400 font-mono block">NODE TEMP</span>
@@ -172,12 +180,44 @@
                         </div>
                     </div>
 
-                    <!-- Start/Stop Mining Main Control Button -->
-                    <div class="mt-5">
+                    <!-- Action Buttons: Start Mining & Rent Rig -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
                         <button id="mineToggleBtn" onclick="toggleMining()" class="w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-wider flex items-center justify-center space-x-2 bg-gradient-to-r from-cyberGreen to-cyberCyan text-black hover:opacity-90 transition neon-glow-green">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                            <span id="mineToggleText">START HASHING NODE</span>
+                            <span id="mineToggleText">START HASHING</span>
                         </button>
+
+                        <button onclick="openRentModal()" class="w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-wider flex items-center justify-center space-x-2 bg-gradient-to-r from-cyberGold/20 to-cyberPurple/20 border border-cyberGold text-cyberGold hover:bg-cyberGold hover:text-black transition neon-glow-gold">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            <span>RENT RIG (BOOSTER)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Rental Booster Card (Dynamic Display) -->
+                <div id="activeRentalCard" class="hidden bg-gradient-to-r from-cyberGold/10 via-cyberCard to-cyberCyan/10 border border-cyberGold/60 rounded-xl p-4 shadow-xl">
+                    <div class="flex items-center justify-between pb-2 border-b border-cyberBorder/60">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-cyberGold animate-ping"></span>
+                            <span class="font-bold text-sm text-cyberGold font-mono">ACTIVE RENTAL RIG CLUSTER</span>
+                        </div>
+                        <span id="rentalBadgeTag" class="text-xs px-2 py-0.5 rounded bg-cyberGold/20 text-cyberGold font-mono font-bold">+10% Net Yield</span>
+                    </div>
+
+                    <div class="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                        <div>
+                            <h4 id="activeRentalTitle" class="font-bold text-white text-base">Nano Node Booster</h4>
+                            <p id="activeRentalStats" class="text-xs font-mono text-gray-300">+5.0 MH/s Bonus • Boost: +0.1537 APS/s</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[11px] text-gray-400 font-mono block">SISA MASA SEWA</span>
+                            <span id="rentalCountdown" class="font-mono text-cyberGreen font-bold text-sm">6h 23m 59s</span>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-black/50 rounded-full h-2 mt-3 border border-cyberBorder overflow-hidden">
+                        <div id="rentalProgressBar" class="bg-gradient-to-r from-cyberGold to-cyberGreen h-full rounded-full transition-all duration-500" style="width: 15%"></div>
                     </div>
                 </div>
 
@@ -210,7 +250,7 @@
                     </div>
                     <div class="flex items-center justify-between text-xs text-gray-400 font-mono mt-1">
                         <span>EST. VALUE: <span id="usdEst">$0.00</span></span>
-                        <span class="text-cyberCyan">+0.0150 APS/s</span>
+                        <span id="ratePerSecDisplay" class="text-cyberCyan">+0.0150 APS/s</span>
                     </div>
 
                     <button onclick="claimRewards()" class="mt-4 w-full py-2.5 rounded-lg border border-cyberGold text-cyberGold hover:bg-cyberGold hover:text-black font-mono font-bold text-xs transition">
@@ -275,6 +315,119 @@
 
     </main>
 
+    <!-- Modal: Rent Hashrate Rig (Sewa Rig) -->
+    <div id="rentRigModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-cyberCard border border-cyberBorder rounded-2xl max-w-2xl w-full p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            
+            <!-- Close Button -->
+            <button onclick="closeRentModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <!-- Modal Header -->
+            <div class="pb-4 border-b border-cyberBorder">
+                <span class="text-xs font-mono text-cyberGold font-bold tracking-wider">CLOUD COMPUTING CLUSTERS</span>
+                <h3 class="text-2xl font-bold text-white tracking-wide">SEWA RIG HASHRATE</h3>
+                <p class="text-xs text-gray-400 font-mono mt-1">Sewa unit komputasi rig awan untuk melipatgandakan kecepatan penambangan token APS secara terjamin.</p>
+            </div>
+
+            <!-- List of Rental Plans -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+
+                <!-- Plan 1: Nano Node Booster -->
+                <div class="p-4 rounded-xl border border-cyberBorder hover:border-cyberCyan/80 bg-black/40 transition flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono text-cyberCyan font-bold">7 HARI SEWA</span>
+                            <span class="text-[10px] bg-cyberCyan/10 border border-cyberCyan/40 text-cyberCyan px-2 py-0.5 rounded font-mono font-bold">+10% Net Yield</span>
+                        </div>
+                        <h4 class="text-lg font-bold text-white mt-1">Nano Node Booster</h4>
+                        <p class="text-xs text-gray-400 font-mono mt-1">Akselerator 7 hari untuk boost penambangan harian dengan profit bersih terjamin.</p>
+
+                        <div class="mt-3 p-2.5 rounded-lg bg-black/60 border border-cyberBorder text-xs font-mono space-y-1">
+                            <div class="flex justify-between"><span>Bonus Hashrate:</span> <span class="text-cyberGreen font-bold">+5.0 MH/s</span></div>
+                            <div class="flex justify-between"><span>Bonus Output:</span> <span class="text-cyberCyan font-bold">+0.1537 APS/s</span></div>
+                            <div class="flex justify-between"><span>Biaya Sewa:</span> <span class="text-cyberGold font-bold">84,544 APS ($0.25)</span></div>
+                        </div>
+                    </div>
+                    <button onclick="rentPlan('RENT_7D_NANO', 'Nano Node Booster', 7, 84544, 5.0, 0.15377, '+10% Net Yield')" class="mt-4 w-full py-2.5 rounded-lg bg-cyberCyan/20 border border-cyberCyan text-cyberCyan hover:bg-cyberCyan hover:text-black font-mono font-bold text-xs transition">
+                        SEWA 7 HARI (84,544 APS)
+                    </button>
+                </div>
+
+                <!-- Plan 2: Quantum Array Cluster -->
+                <div class="p-4 rounded-xl border border-cyberBorder hover:border-cyberGreen/80 bg-black/40 transition flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono text-cyberGreen font-bold">14 HARI SEWA</span>
+                            <span class="text-[10px] bg-cyberGreen/10 border border-cyberGreen/40 text-cyberGreen px-2 py-0.5 rounded font-mono font-bold">+15% Net Yield</span>
+                        </div>
+                        <h4 class="text-lg font-bold text-white mt-1">Quantum Array Cluster</h4>
+                        <p class="text-xs text-gray-400 font-mono mt-1">Daya cloud quantum 14 hari dengan efisiensi tinggi dan return optimal.</p>
+
+                        <div class="mt-3 p-2.5 rounded-lg bg-black/60 border border-cyberBorder text-xs font-mono space-y-1">
+                            <div class="flex justify-between"><span>Bonus Hashrate:</span> <span class="text-cyberGreen font-bold">+25.0 MH/s</span></div>
+                            <div class="flex justify-between"><span>Bonus Output:</span> <span class="text-cyberCyan font-bold">+0.3215 APS/s</span></div>
+                            <div class="flex justify-between"><span>Biaya Sewa:</span> <span class="text-cyberGold font-bold">338,174 APS ($1.00)</span></div>
+                        </div>
+                    </div>
+                    <button onclick="rentPlan('RENT_14D_QUANTUM', 'Quantum Array Cluster', 14, 338174, 25.0, 0.321511, '+15% Net Yield')" class="mt-4 w-full py-2.5 rounded-lg bg-cyberGreen/20 border border-cyberGreen text-cyberGreen hover:bg-cyberGreen hover:text-black font-mono font-bold text-xs transition">
+                        SEWA 14 HARI (338,174 APS)
+                    </button>
+                </div>
+
+                <!-- Plan 3: Sub-Zero Dedicated Rig -->
+                <div class="p-4 rounded-xl border border-cyberBorder hover:border-cyberGold/80 bg-black/40 transition flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono text-cyberGold font-bold">30 HARI SEWA</span>
+                            <span class="text-[10px] bg-cyberGold/10 border border-cyberGold/40 text-cyberGold px-2 py-0.5 rounded font-mono font-bold">+20% Net Yield</span>
+                        </div>
+                        <h4 class="text-lg font-bold text-white mt-1">Sub-Zero Dedicated Rig</h4>
+                        <p class="text-xs text-gray-400 font-mono mt-1">Rig kriogenik 30 hari penuh dengan prioritas validasi blok tertinggi.</p>
+
+                        <div class="mt-3 p-2.5 rounded-lg bg-black/60 border border-cyberBorder text-xs font-mono space-y-1">
+                            <div class="flex justify-between"><span>Bonus Hashrate:</span> <span class="text-cyberGreen font-bold">+100.0 MH/s</span></div>
+                            <div class="flex justify-between"><span>Bonus Output:</span> <span class="text-cyberCyan font-bold">+0.7828 APS/s</span></div>
+                            <div class="flex justify-between"><span>Biaya Sewa:</span> <span class="text-cyberGold font-bold">1,690,872 APS ($5.00)</span></div>
+                        </div>
+                    </div>
+                    <button onclick="rentPlan('RENT_30D_SUBZERO', 'Sub-Zero Dedicated Rig', 30, 1690872, 100.0, 0.782811, '+20% Net Yield')" class="mt-4 w-full py-2.5 rounded-lg bg-cyberGold/20 border border-cyberGold text-cyberGold hover:bg-cyberGold hover:text-black font-mono font-bold text-xs transition">
+                        SEWA 30 HARI (1,690,872 APS)
+                    </button>
+                </div>
+
+                <!-- Plan 4: Titan Enterprise Grid -->
+                <div class="p-4 rounded-xl border border-cyberBorder hover:border-cyberPurple/80 bg-black/40 transition flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono text-cyberPurple font-bold">30 HARI SEWA</span>
+                            <span class="text-[10px] bg-cyberPurple/10 border border-cyberPurple/40 text-cyberPurple px-2 py-0.5 rounded font-mono font-bold">+25% Net Yield</span>
+                        </div>
+                        <h4 class="text-lg font-bold text-white mt-1">Titan Enterprise Grid</h4>
+                        <p class="text-xs text-gray-400 font-mono mt-1">Kapasitas komputasi enterprise industri untuk hasil APS terbesar.</p>
+
+                        <div class="mt-3 p-2.5 rounded-lg bg-black/60 border border-cyberBorder text-xs font-mono space-y-1">
+                            <div class="flex justify-between"><span>Bonus Hashrate:</span> <span class="text-cyberGreen font-bold">+450.0 MH/s</span></div>
+                            <div class="flex justify-between"><span>Bonus Output:</span> <span class="text-cyberCyan font-bold">+3.2617 APS/s</span></div>
+                            <div class="flex justify-between"><span>Biaya Sewa:</span> <span class="text-cyberGold font-bold">6,763,488 APS ($20.00)</span></div>
+                        </div>
+                    </div>
+                    <button onclick="rentPlan('RENT_30D_TITAN', 'Titan Enterprise Grid', 30, 6763488, 450.0, 3.261713, '+25% Net Yield')" class="mt-4 w-full py-2.5 rounded-lg bg-cyberPurple/20 border border-cyberPurple text-cyberPurple hover:bg-cyberPurple hover:text-white font-mono font-bold text-xs transition">
+                        SEWA 30 HARI (6,763,488 APS)
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Notes -->
+            <div class="mt-5 p-3 rounded-lg bg-black/30 border border-cyberBorder/60 text-xs font-mono text-gray-400">
+                ⚡ Transaksi sewa dapat langsung ditandatangani via Phantom Wallet atau diverifikasi melalui RWA Treasury Pool.
+            </div>
+
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="border-t border-cyberBorder bg-cyberCard/60 py-4 mt-8 text-center text-xs font-mono text-gray-500">
         <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
@@ -312,10 +465,17 @@
         // State Variables
         let isMining = false;
         let minedAps = 0.0;
-        let hashrateMhs = 50.0;
+        let baseHashrateMhs = 50.0;
+        let bonusHashrateMhs = 0.0;
+        let baseYieldPerSec = 0.0150;
+        let bonusYieldPerSec = 0.0;
         let tempC = 42.0;
         let miningInterval = null;
+        let countdownInterval = null;
         let connectedPublicKey = null;
+
+        // Active Rental State
+        let currentRental = null;
 
         const APS_MINT = "5Jbt6zLztKuRF9hc7C8y2VemxMguP86ibDoJzetkpump";
         const TREASURY = "HNKC9TVBJSKG1Mzu6PE9Yag83y9iZv6yhr6z1UdK92hq";
@@ -329,6 +489,101 @@
             p.textContent = `[${time}] ${msg}`;
             consoleBox.appendChild(p);
             consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        function openRentModal() {
+            playBeep(520, 'sine', 0.15);
+            document.getElementById('rentRigModal').classList.remove('hidden');
+        }
+
+        function closeRentModal() {
+            document.getElementById('rentRigModal').classList.add('hidden');
+        }
+
+        // Handle Rent Plan Action
+        async function rentPlan(planId, planName, days, costAps, bonusMhs, bonusYield, badge) {
+            playBeep(650, 'triangle', 0.2);
+
+            const confirmMsg = `Konfirmasi Sewa Rig:\n\nPaket: ${planName}\nDurasi: ${days} Hari\nBiaya: ${costAps.toLocaleString()} APS\nBonus Hashrate: +${bonusMhs} MH/s\n\nLanjutkan penyewaan?`;
+            if (!confirm(confirmMsg)) return;
+
+            closeRentModal();
+
+            // Setup Active Rental
+            const now = Date.now();
+            const durationMs = days * 24 * 60 * 60 * 1000;
+            currentRental = {
+                planId,
+                planName,
+                startTime: now,
+                endTime: now + durationMs,
+                bonusMhs,
+                bonusYield,
+                badge
+            };
+
+            bonusHashrateMhs = bonusMhs;
+            bonusYieldPerSec = bonusYield;
+
+            updateRigDisplay();
+            startRentalCountdown();
+
+            playBeep(920, 'square', 0.3);
+            logConsole(`Rig disewa: ${planName} (+${bonusMhs} MH/s)!`, true);
+            alert(`Selamat! Anda berhasil menyewa ${planName}.\nHashrate Anda meningkat sebesar +${bonusMhs} MH/s selama ${days} hari!`);
+        }
+
+        function updateRigDisplay() {
+            const totalMhs = baseHashrateMhs + bonusHashrateMhs;
+            const totalYield = baseYieldPerSec + bonusYieldPerSec;
+
+            document.getElementById('hashrateTag').textContent = `${totalMhs.toFixed(1)} MH/s`;
+            document.getElementById('hashrateDisplay').textContent = `${totalMhs.toFixed(1)} MH/s`;
+            document.getElementById('ratePerSecDisplay').textContent = `+${totalYield.toFixed(4)} APS/s`;
+
+            if (currentRental) {
+                document.getElementById('activeRentalCard').classList.remove('hidden');
+                document.getElementById('activeRentalTitle').textContent = currentRental.planName;
+                document.getElementById('rentalBadgeTag').textContent = currentRental.badge;
+                document.getElementById('activeRentalStats').textContent = `+${currentRental.bonusMhs} MH/s Bonus • Boost: +${currentRental.bonusYield.toFixed(4)} APS/s`;
+            } else {
+                document.getElementById('activeRentalCard').classList.add('hidden');
+            }
+        }
+
+        function startRentalCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
+
+            countdownInterval = setInterval(() => {
+                if (!currentRental) {
+                    clearInterval(countdownInterval);
+                    return;
+                }
+
+                const now = Date.now();
+                const remaining = currentRental.endTime - now;
+
+                if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                    alert(`Masa sewa ${currentRental.planName} telah berakhir.`);
+                    bonusHashrateMhs = 0.0;
+                    bonusYieldPerSec = 0.0;
+                    currentRental = null;
+                    updateRigDisplay();
+                    return;
+                }
+
+                const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((remaining % (1000 * 60)) / 1000);
+
+                document.getElementById('rentalCountdown').textContent = `${days}d ${hours}h ${mins}m ${secs}s`;
+
+                const totalDuration = currentRental.endTime - currentRental.startTime;
+                const progress = Math.min(100, Math.max(0, ((now - currentRental.startTime) / totalDuration) * 100));
+                document.getElementById('rentalProgressBar').style.width = `${progress}%`;
+            }, 1000);
         }
 
         // Phantom Wallet Web Handshake
@@ -415,15 +670,15 @@
                 playBeep(880, 'square', 0.2);
                 badge.textContent = "HASHING ACTIVE";
                 badge.className = "text-xs px-2.5 py-1 rounded bg-cyberGreen/20 border border-cyberGreen/60 text-cyberGreen font-mono font-bold tracking-wider animate-pulse";
-                toggleText.textContent = "STOP HASHING NODE";
+                toggleText.textContent = "STOP HASHING";
                 toggleBtn.className = "w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-wider flex items-center justify-center space-x-2 bg-cyberRed/20 border border-cyberRed text-cyberRed hover:bg-cyberRed hover:text-white transition";
                 laser.classList.remove('hidden');
                 ambient.className = "absolute inset-0 bg-cyberGreen/15 rounded-xl transition duration-500 animate-pulse";
-                logConsole("APS Micro Node Alpha started at 50.0 MH/s", true);
+                logConsole(`Mining aktif dengan total ${(baseHashrateMhs + bonusHashrateMhs).toFixed(1)} MH/s`, true);
 
                 miningInterval = setInterval(() => {
-                    const yieldPerSec = 0.0150;
-                    minedAps += yieldPerSec;
+                    const currentRate = baseYieldPerSec + bonusYieldPerSec;
+                    minedAps += currentRate;
                     tempC = Math.min(68.5, tempC + (Math.random() * 0.4 - 0.15));
 
                     document.getElementById('minedApsCounter').textContent = minedAps.toFixed(4);
@@ -432,7 +687,7 @@
 
                     if (Math.random() < 0.15) {
                         const blockId = Math.floor(Math.random() * 900000 + 100000);
-                        logConsole(`Validated Solana Block #${blockId} • Reward: +0.015 APS`);
+                        logConsole(`Validated Solana Block #${blockId} • Yield: +${currentRate.toFixed(4)} APS`);
                     }
                 }, 1000);
             } else {
@@ -440,7 +695,7 @@
                 clearInterval(miningInterval);
                 badge.textContent = "STANDBY";
                 badge.className = "text-xs px-2.5 py-1 rounded bg-cyberRed/20 border border-cyberRed/50 text-cyberRed font-mono font-bold tracking-wider";
-                toggleText.textContent = "START HASHING NODE";
+                toggleText.textContent = "START HASHING";
                 toggleBtn.className = "w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-wider flex items-center justify-center space-x-2 bg-gradient-to-r from-cyberGreen to-cyberCyan text-black hover:opacity-90 transition neon-glow-green";
                 laser.classList.add('hidden');
                 ambient.className = "absolute inset-0 bg-cyberCyan/5 rounded-xl transition duration-500";
