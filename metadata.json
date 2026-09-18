@@ -1,7 +1,8 @@
 {
   "name": "APS Miner",
-  "description": "Cyberpunk Solana SPL idle mining dApp with Helius RPC & Phantom Wallet integration",
+  "description": "Cyberpunk Solana Mining Simulator & Cloud Rig Manager",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
-

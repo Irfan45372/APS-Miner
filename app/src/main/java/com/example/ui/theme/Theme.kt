@@ -5,38 +5,30 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val CyberDarkColorScheme = darkColorScheme(
-    primary = CyberCyan,
+private val DarkColorScheme = darkColorScheme(
+    primary = CyberGreen,
     onPrimary = Color.Black,
-    primaryContainer = Color(0xFF003640),
-    onPrimaryContainer = CyberCyan,
-    secondary = SolanaPurple,
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFF321254),
-    onSecondaryContainer = Color(0xFFE9D5FF),
-    tertiary = SolanaGreen,
-    onTertiary = Color.Black,
-    tertiaryContainer = Color(0xFF003822),
-    onTertiaryContainer = SolanaGreen,
-    background = CyberDarkBg,
+    secondary = CyberCyan,
+    onSecondary = Color.Black,
+    tertiary = NeonPurple,
+    onTertiary = Color.White,
+    background = DarkBackground,
     onBackground = TextPrimary,
-    surface = CyberSurface,
+    surface = CardBackground,
     onSurface = TextPrimary,
-    surfaceVariant = CyberSurfaceVariant,
+    surfaceVariant = SurfaceLight,
     onSurfaceVariant = TextSecondary,
-    outline = CyberCardBorder,
-    error = StatusError,
+    outline = DarkBorder,
+    error = DangerRed,
     onError = Color.White
 )
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = true,
-    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = CyberDarkColorScheme,
+        colorScheme = DarkColorScheme,
         typography = Typography,
         content = content
     )

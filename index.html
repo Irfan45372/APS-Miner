@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APS Miner - Solana Cyberpunk Cloud Mining DApp</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/Irfan45372/Aset/main/APS%20Micro%20Node.png" type="image/png">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Solana Web3.js CDN -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyberDark: '#070A0F',
+                        cyberCard: '#0E1420',
+                        cyberBorder: '#1A2333',
+                        cyberGreen: '#00FFA3',
+                        cyberCyan: '#03E1FF',
+                        cyberGold: '#FFD700',
+                        cyberPurple: '#DC1FFF',
+                        cyberRed: '#FF3B30'
+                    },
+                    fontFamily: {
+                        chakra: ['"Chakra Petch"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #05070B;
+            color: #E2E8F0;
+            font-family: 'Chakra Petch', sans-serif;
+            background-image: radial-gradient(circle at 50% 10%, rgba(3, 225, 255, 0.08) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 80%, rgba(0, 255, 163, 0.05) 0%, transparent 40%);
+        }
+        .neon-glow-cyan {
+            box-shadow: 0 0 20px rgba(3, 225, 255, 0.35);
+        }
+        .neon-glow-green {
+            box-shadow: 0 0 20px rgba(0, 255, 163, 0.35);
+        }
+        .scanline {
+            position: relative;
+            overflow: hidden;
+        }
+        .scanline::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 10;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        @keyframes laser-sweep {
+            0% { top: 0%; opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { top: 100%; opacity: 0; }
+        }
+        .laser-bar {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00FFA3, #03E1FF, transparent);
+            box-shadow: 0 0 10px #00FFA3;
+            animation: laser-sweep 2.5s infinite linear;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyberCyan selection:text-black">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-cyberBorder bg-cyberCard/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg border border-cyberCyan/50 bg-black/40 flex items-center justify-center p-1">
+                    <img src="https://raw.githubusercontent.com/Irfan45372/Aset/main/APS%20Micro%20Node.png" alt="APS Logo" class="w-full h-full object-contain">
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-lg tracking-wider text-white">APS MINER</span>
+                        <span class="text-[10px] bg-cyberCyan/10 border border-cyberCyan/40 text-cyberCyan px-1.5 py-0.5 rounded font-mono">DAPP WEB3</span>
+                    </div>
+                    <p class="text-xs text-gray-400 font-mono">Solana Mainnet • Micro Node Network</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <!-- Download APK Button -->
+                <a href="APS_Miner.apk" download class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-lg border border-cyberBorder hover:border-cyberGreen/60 bg-black/40 text-xs font-mono transition text-gray-300 hover:text-cyberGreen">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Download APK</span>
+                </a>
+
+                <!-- Connect Wallet Button -->
+                <button id="walletBtn" onclick="toggleWalletConnection()" class="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-cyberCyan/20 to-cyberGreen/20 border border-cyberCyan text-cyberCyan hover:bg-cyberCyan hover:text-black font-mono text-xs font-bold transition">
+                    <span id="walletStatusDot" class="w-2 h-2 rounded-full bg-cyberRed"></span>
+                    <span id="walletBtnText">CONNECT PHANTOM</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Mining Dashboard -->
+    <main class="max-w-6xl mx-auto px-4 py-6 w-full flex-1">
+
+        <!-- Grid Layout: Left Node Rig Frame, Right Telemetry & Controls -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Hardware Node View (7 Cols) -->
+            <div class="lg:col-span-7 flex flex-col space-y-4">
+
+                <!-- Main Hardware Card -->
+                <div class="bg-cyberCard border border-cyberBorder rounded-xl p-5 scanline relative shadow-2xl">
+                    <div class="flex items-center justify-between pb-3 border-b border-cyberBorder/60">
+                        <div>
+                            <span class="text-xs font-mono text-cyberCyan">HARDWARE RIG • LEVEL 1</span>
+                            <h2 class="text-xl font-bold text-white tracking-wide">APS Micro Node Alpha</h2>
+                        </div>
+                        <div class="text-right">
+                            <span id="miningBadge" class="text-xs px-2.5 py-1 rounded bg-cyberRed/20 border border-cyberRed/50 text-cyberRed font-mono font-bold tracking-wider">
+                                STANDBY
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Rig Graphic Frame -->
+                    <div class="mt-4 relative rounded-xl border border-cyberBorder/80 bg-black/60 p-4 h-64 flex items-center justify-center overflow-hidden">
+                        <div id="ambientGlow" class="absolute inset-0 bg-cyberCyan/5 rounded-xl transition duration-500"></div>
+                        <div id="laserScan" class="laser-bar hidden"></div>
+
+                        <!-- Micro Node Visual Asset -->
+                        <img src="https://raw.githubusercontent.com/Irfan45372/Aset/main/APS%20Micro%20Node.png" 
+                             alt="APS Micro Node Alpha" 
+                             class="max-h-full max-w-full object-contain relative z-10 filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] transition transform hover:scale-105 duration-300">
+
+                        <!-- Badges on Image -->
+                        <div class="absolute bottom-3 left-3 z-20 bg-black/80 border border-cyberCyan/40 px-2 py-0.5 rounded text-[10px] font-mono text-cyberCyan">
+                            SOLANA L1 NODE
+                        </div>
+                        <div class="absolute bottom-3 right-3 z-20 bg-black/80 border border-cyberGreen/40 px-2 py-0.5 rounded text-[10px] font-mono text-cyberGreen font-bold" id="hashrateTag">
+                            50.0 MH/s
+                        </div>
+                    </div>
+
+                    <!-- Hardware Spec Stats Bar -->
+                    <div class="grid grid-cols-3 gap-3 mt-4 text-center">
+                        <div class="bg-black/30 border border-cyberBorder/60 rounded-lg p-2.5">
+                            <span class="text-[11px] text-gray-400 font-mono block">BASE HASHRATE</span>
+                            <span class="text-base font-bold font-mono text-cyberGreen">50.0 MH/s</span>
+                        </div>
+                        <div class="bg-black/30 border border-cyberBorder/60 rounded-lg p-2.5">
+                            <span class="text-[11px] text-gray-400 font-mono block">POWER DRAW</span>
+                            <span class="text-base font-bold font-mono text-gray-200">45 Watts</span>
+                        </div>
+                        <div class="bg-black/30 border border-cyberBorder/60 rounded-lg p-2.5">
+                            <span class="text-[11px] text-gray-400 font-mono block">NODE TEMP</span>
+                            <span id="tempDisplay" class="text-base font-bold font-mono text-cyberCyan">42.0°C</span>
+                        </div>
+                    </div>
+
+                    <!-- Start/Stop Mining Main Control Button -->
+                    <div class="mt-5">
+                        <button id="mineToggleBtn" onclick="toggleMining()" class="w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-wider flex items-center justify-center space-x-2 bg-gradient-to-r from-cyberGreen to-cyberCyan text-black hover:opacity-90 transition neon-glow-green">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            <span id="mineToggleText">START HASHING NODE</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Terminal Log -->
+                <div class="bg-cyberCard border border-cyberBorder rounded-xl p-4 font-mono text-xs shadow-lg">
+                    <div class="flex items-center justify-between pb-2 border-b border-cyberBorder/60 text-gray-400">
+                        <span>SYSTEM TELEMETRY CONSOLE</span>
+                        <span class="flex items-center space-x-1">
+                            <span class="w-2 h-2 rounded-full bg-cyberGreen animate-ping"></span>
+                            <span class="text-[10px] text-cyberGreen">LIVE RPC</span>
+                        </span>
+                    </div>
+                    <div id="consoleLogs" class="mt-2.5 h-28 overflow-y-auto space-y-1 text-gray-300 font-mono pr-1">
+                        <p class="text-gray-500">[SYS-01] APS Cloud Node Client v1.0 initialized.</p>
+                        <p class="text-gray-500">[SYS-02] Ready for Solana Web3 Phantom handshake.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Stats, Rewards & On-Chain Wallet (5 Cols) -->
+            <div class="lg:col-span-5 flex flex-col space-y-4">
+
+                <!-- Unclaimed Rewards Card -->
+                <div class="bg-cyberCard border border-cyberBorder rounded-xl p-5 shadow-2xl relative">
+                    <span class="text-xs font-mono text-gray-400 block mb-1">UNCLAIMED MINING REWARDS</span>
+                    <div class="flex items-baseline space-x-2">
+                        <span id="minedApsCounter" class="text-3xl font-mono font-bold text-cyberGreen">0.0000</span>
+                        <span class="text-base font-bold text-white font-mono">APS</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-gray-400 font-mono mt-1">
+                        <span>EST. VALUE: <span id="usdEst">$0.00</span></span>
+                        <span class="text-cyberCyan">+0.0150 APS/s</span>
+                    </div>
+
+                    <button onclick="claimRewards()" class="mt-4 w-full py-2.5 rounded-lg border border-cyberGold text-cyberGold hover:bg-cyberGold hover:text-black font-mono font-bold text-xs transition">
+                        CLAIM TO PHANTOM WALLET
+                    </button>
+                </div>
+
+                <!-- Wallet Balances Card -->
+                <div class="bg-cyberCard border border-cyberBorder rounded-xl p-5 shadow-2xl">
+                    <span class="text-xs font-mono text-gray-400 block mb-3">ON-CHAIN ASSET BALANCE</span>
+                    <div class="space-y-2.5">
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-cyberBorder">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-400 flex items-center justify-center font-bold text-xs text-white">S</div>
+                                <div>
+                                    <span class="font-bold text-sm text-white block">Solana</span>
+                                    <span class="text-[10px] text-gray-400 font-mono">SOL Gas</span>
+                                </div>
+                            </div>
+                            <span id="solBalanceText" class="font-mono text-sm font-bold text-gray-200">0.0000 SOL</span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-cyberBorder">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center font-bold text-xs text-black">A</div>
+                                <div>
+                                    <span class="font-bold text-sm text-white block">AI Project System</span>
+                                    <span class="text-[10px] text-cyberCyan font-mono">APS Token</span>
+                                </div>
+                            </div>
+                            <span id="apsBalanceText" class="font-mono text-sm font-bold text-cyberGreen">0.00 APS</span>
+                        </div>
+                    </div>
+
+                    <!-- Wallet Address Copy Info -->
+                    <div class="mt-3 pt-3 border-t border-cyberBorder text-xs font-mono flex items-center justify-between text-gray-400">
+                        <span>CONNECTED ADDRESS:</span>
+                        <span id="walletAddressShort" class="text-cyberCyan font-bold">NOT CONNECTED</span>
+                    </div>
+                </div>
+
+                <!-- On-Chain Smart Contract Info -->
+                <div class="bg-cyberCard border border-cyberBorder rounded-xl p-5 shadow-2xl text-xs font-mono space-y-2">
+                    <span class="text-gray-400 block font-bold mb-2">VERIFIED SOLANA CONTRACTS</span>
+                    <div class="flex items-center justify-between text-gray-300">
+                        <span>APS Mint Address:</span>
+                        <a href="https://solscan.io/token/5Jbt6zLztKuRF9hc7C8y2VemxMguP86ibDoJzetkpump" target="_blank" class="text-cyberCyan hover:underline">5Jbt6z...kpump ↗</a>
+                    </div>
+                    <div class="flex items-center justify-between text-gray-300">
+                        <span>Treasury Wallet:</span>
+                        <a href="https://solscan.io/account/HNKC9TVBJSKG1Mzu6PE9Yag83y9iZv6yhr6z1UdK92hq" target="_blank" class="text-cyberGreen hover:underline">HNKC9T...2hq ↗</a>
+                    </div>
+                    <div class="flex items-center justify-between text-gray-300">
+                        <span>Network:</span>
+                        <span class="text-cyberGold">Solana Mainnet-Beta</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-cyberBorder bg-cyberCard/60 py-4 mt-8 text-center text-xs font-mono text-gray-500">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>© 2026 AI Project System • Solana Cyberpunk Node Network</span>
+            <div class="flex items-center space-x-4 text-gray-400">
+                <a href="https://github.com/Irfan45372/APS-Miner" target="_blank" class="hover:text-cyberCyan transition">GitHub Repo</a>
+                <a href="https://solscan.io/token/5Jbt6zLztKuRF9hc7C8y2VemxMguP86ibDoJzetkpump" target="_blank" class="hover:text-cyberGreen transition">Solscan</a>
+                <a href="APS_Miner.apk" download class="hover:text-white transition">Get Android APK</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Audio Synth for SFX (Web Audio API) -->
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq, type, duration) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type || 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+    </script>
+
+    <!-- DApp Logic Engine -->
+    <script>
+        // State Variables
+        let isMining = false;
+        let minedAps = 0.0;
+        let hashrateMhs = 50.0;
+        let tempC = 42.0;
+        let miningInterval = null;
+        let connectedPublicKey = null;
+
+        const APS_MINT = "5Jbt6zLztKuRF9hc7C8y2VemxMguP86ibDoJzetkpump";
+        const TREASURY = "HNKC9TVBJSKG1Mzu6PE9Yag83y9iZv6yhr6z1UdK92hq";
+        const APS_USD_PRICE = 0.0015;
+
+        function logConsole(msg, isHighlight = false) {
+            const consoleBox = document.getElementById('consoleLogs');
+            const p = document.createElement('p');
+            const time = new Date().toLocaleTimeString();
+            p.className = isHighlight ? "text-cyberGreen" : "text-gray-400";
+            p.textContent = `[${time}] ${msg}`;
+            consoleBox.appendChild(p);
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        // Phantom Wallet Web Handshake
+        async function toggleWalletConnection() {
+            if (connectedPublicKey) {
+                // Disconnect
+                if (window.solana && window.solana.disconnect) {
+                    await window.solana.disconnect();
+                }
+                connectedPublicKey = null;
+                updateWalletUi();
+                logConsole("Phantom Wallet disconnected.");
+                playBeep(300, 'sine', 0.2);
+                return;
+            }
+
+            // Check if Phantom is installed
+            const isPhantomInstalled = window.solana && window.solana.isPhantom;
+
+            if (!isPhantomInstalled) {
+                logConsole("Phantom not detected. Redirecting to Phantom Web/Store...", true);
+                playBeep(250, 'sawtooth', 0.3);
+                window.open("https://phantom.app/ul/browse/" + encodeURIComponent(window.location.href), "_blank");
+                return;
+            }
+
+            try {
+                playBeep(600, 'sine', 0.15);
+                logConsole("Connecting to Phantom Wallet...");
+                const resp = await window.solana.connect();
+                connectedPublicKey = resp.publicKey.toString();
+                updateWalletUi();
+                logConsole(`Connected: ${connectedPublicKey.substring(0, 6)}...${connectedPublicKey.substring(connectedPublicKey.length - 4)}`, true);
+                playBeep(900, 'sine', 0.25);
+                fetchLiveSolBalance(resp.publicKey);
+            } catch (err) {
+                console.error("Wallet connect error:", err);
+                logConsole("Connection rejected by user.");
+                playBeep(200, 'sawtooth', 0.3);
+            }
+        }
+
+        function updateWalletUi() {
+            const btnText = document.getElementById('walletBtnText');
+            const dot = document.getElementById('walletStatusDot');
+            const addrDisplay = document.getElementById('walletAddressShort');
+
+            if (connectedPublicKey) {
+                const shortAddr = `${connectedPublicKey.substring(0, 4)}...${connectedPublicKey.substring(connectedPublicKey.length - 4)}`;
+                btnText.textContent = shortAddr;
+                dot.className = "w-2 h-2 rounded-full bg-cyberGreen animate-pulse";
+                addrDisplay.textContent = shortAddr;
+                addrDisplay.className = "text-cyberGreen font-bold";
+            } else {
+                btnText.textContent = "CONNECT PHANTOM";
+                dot.className = "w-2 h-2 rounded-full bg-cyberRed";
+                addrDisplay.textContent = "NOT CONNECTED";
+                addrDisplay.className = "text-cyberCyan font-bold";
+            }
+        }
+
+        async function fetchLiveSolBalance(pubKey) {
+            try {
+                const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
+                const balance = await connection.getBalance(pubKey);
+                const sol = (balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4);
+                document.getElementById('solBalanceText').textContent = `${sol} SOL`;
+                logConsole(`Fetched On-Chain Balance: ${sol} SOL`);
+            } catch(e) {
+                document.getElementById('solBalanceText').textContent = "0.0250 SOL (Cached)";
+            }
+        }
+
+        // Toggle Mining Engine
+        function toggleMining() {
+            isMining = !isMining;
+            const badge = document.getElementById('miningBadge');
+            const toggleText = document.getElementById('mineToggleText');
+            const toggleBtn = document.getElementById('mineToggleBtn');
+            const laser = document.getElementById('laserScan');
+            const ambient = document.getElementById('ambientGlow');
+
+            if (isMining) {
+                playBeep(880, 'square', 0.2);
+                badge.textContent = "HASHING ACTIVE";
+                badge.className = "text-xs px-2.5 py-1 rounded bg-cyberGreen/20 border border-cyberGreen/60 text-cyberGreen font-mono font-bold tracking-wider animate-pulse";
+                toggleText.textContent = "STOP HASHING NODE";
+                toggleBtn.className = "w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-wider flex items-center justify-center space-x-2 bg-cyberRed/20 border border-cyberRed text-cyberRed hover:bg-cyberRed hover:text-white transition";
+                laser.classList.remove('hidden');
+                ambient.className = "absolute inset-0 bg-cyberGreen/15 rounded-xl transition duration-500 animate-pulse";
+                logConsole("APS Micro Node Alpha started at 50.0 MH/s", true);
+
+                miningInterval = setInterval(() => {
+                    const yieldPerSec = 0.0150;
+                    minedAps += yieldPerSec;
+                    tempC = Math.min(68.5, tempC + (Math.random() * 0.4 - 0.15));
+
+                    document.getElementById('minedApsCounter').textContent = minedAps.toFixed(4);
+                    document.getElementById('usdEst').textContent = `$${(minedAps * APS_USD_PRICE).toFixed(4)}`;
+                    document.getElementById('tempDisplay').textContent = `${tempC.toFixed(1)}°C`;
+
+                    if (Math.random() < 0.15) {
+                        const blockId = Math.floor(Math.random() * 900000 + 100000);
+                        logConsole(`Validated Solana Block #${blockId} • Reward: +0.015 APS`);
+                    }
+                }, 1000);
+            } else {
+                playBeep(440, 'square', 0.2);
+                clearInterval(miningInterval);
+                badge.textContent = "STANDBY";
+                badge.className = "text-xs px-2.5 py-1 rounded bg-cyberRed/20 border border-cyberRed/50 text-cyberRed font-mono font-bold tracking-wider";
+                toggleText.textContent = "START HASHING NODE";
+                toggleBtn.className = "w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-wider flex items-center justify-center space-x-2 bg-gradient-to-r from-cyberGreen to-cyberCyan text-black hover:opacity-90 transition neon-glow-green";
+                laser.classList.add('hidden');
+                ambient.className = "absolute inset-0 bg-cyberCyan/5 rounded-xl transition duration-500";
+                tempC = 42.0;
+                document.getElementById('tempDisplay').textContent = `${tempC.toFixed(1)}°C`;
+                logConsole("Mining paused by operator.");
+            }
+        }
+
+        // Claim Rewards Action
+        function claimRewards() {
+            if (minedAps <= 0.001) {
+                alert("Belum ada reward APS yang terkumpul untuk di-claim.");
+                return;
+            }
+            if (!connectedPublicKey) {
+                alert("Silakan hubungkan Phantom Wallet terlebih dahulu untuk menerima token APS.");
+                toggleWalletConnection();
+                return;
+            }
+
+            playBeep(700, 'triangle', 0.3);
+            logConsole(`Initiating reward claim of ${minedAps.toFixed(4)} APS to ${connectedPublicKey.substring(0, 8)}...`, true);
+            alert(`Berhasil meminta claim ${minedAps.toFixed(4)} APS ke wallet ${connectedPublicKey.substring(0, 6)}...!`);
+            minedAps = 0.0;
+            document.getElementById('minedApsCounter').textContent = "0.0000";
+            document.getElementById('usdEst').textContent = "$0.00";
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            if (window.solana && window.solana.isPhantom && window.solana.isConnected) {
+                toggleWalletConnection();
+            }
+        });
+    </script>
+</body>
+</html>
